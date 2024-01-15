@@ -1,25 +1,215 @@
-import logo from './logo.svg';
-import './App.css';
+import { useState, useEffect } from "react";
+import styles from "./app.module.css";
 
-function App() {
+const App = () => {
+  const [todos, setTodos] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [newTodo, setNewTodo] = useState("Новая задача");
+  const [findTodo, setFindTodo] = useState("Введите фрагмент задачи");
+  const [idFoundTodo, setIdFoundTodo] = useState("");
+  const [isNewTodo, setIsNewTodo] = useState(false);
+  const [idUpdateTodo, setIdUpdateTodo] = useState("Введите id задачи");
+  const [idDeleteTodo, setIdDeleteTodo] = useState("Введите id задачи");
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeliting] = useState(false);
+  const [isFind, setIsFind] = useState(false);
+  const [isSort, setIsSort] = useState(false);
+  const todosSort = isSort
+    ? todos.sort((a, b) => {
+        return a.title > b.title ? 1 : -1;
+      })
+    : todos;
+
+  useEffect(() => {
+    setIsLoading(true);
+
+    fetch("http://localhost:3005/todos")
+      .then((loadedData) => loadedData.json())
+      .then((loadedTodos) => {
+        setTodos(loadedTodos);
+      })
+      .finally(() => setIsLoading(false));
+  }, [isNewTodo]);
+
+  const onSubmitAddTodo = (event) => {
+    event.preventDefault();
+    setIsCreating(true);
+    fetch("http://localhost:3005/todos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json;charset=utf-8" },
+      body: JSON.stringify({
+        title: newTodo,
+      }),
+    })
+      .then((rawResponse) => rawResponse.json())
+      .then((response) => {
+        console.log("Добавлена задача:", response);
+      })
+      .finally(() => {
+        console.log("Добавлена задача:");
+        setNewTodo("Новая задача");
+        setIsNewTodo(!isNewTodo);
+        setIsCreating(false);
+      });
+  };
+
+  const onSubmitUpdateTodo = (event) => {
+    event.preventDefault();
+    setIsUpdating(true);
+    fetch(`http://localhost:3005/todos/${idUpdateTodo}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json;charset=utf-8" },
+      body: JSON.stringify({
+        completed: "Выполнено: ",
+      }),
+    })
+      .then((rawResponse) => rawResponse.json())
+      .then((response) => {
+        console.log("Задача обновлена:", response);
+      })
+      .finally(() => {
+        setIsNewTodo(!isNewTodo);
+        setIdUpdateTodo("Введите id задачи");
+        setIsUpdating(false);
+      });
+  };
+
+  const onSubmitDeleteTodo = (event) => {
+    event.preventDefault();
+    setIsDeliting(true);
+    fetch(`http://localhost:3005/todos/${idDeleteTodo}`, {
+      method: "DELETE",
+    })
+      .then((rawResponse) => rawResponse.json())
+      .then((response) => {
+        console.log("Задача удалена:", response);
+      })
+      .finally(() => {
+        setIsNewTodo(!isNewTodo);
+        setIdDeleteTodo("Введите id задачи");
+        setIsUpdating(false);
+      });
+  };
+
+  const onClickSortTodos = () => {
+    setIsSort(!isSort);
+    console.log(isSort);
+  };
+
+  const onSubmitFindTodo = (event) => {
+    event.preventDefault();
+    setIsFind(true);
+    fetch("http://localhost:3005/todos")
+      .then((loadedData) => loadedData.json())
+      .then((loadedTodos) => {
+        todos.forEach((element) => {
+          if (element.title.toLowerCase().includes(findTodo)) {
+            setIdFoundTodo(element.id);
+            return element.id;
+          }
+        });
+      })
+      .finally(() => {
+        setIsFind(false);
+        setFindTodo("Введите фрагмент задачи");
+      });
+  };
+
+  //обработчики
+  const onChangeNewTodo = ({ target }) => {
+    setNewTodo(target.value);
+  };
+
+  const onChangeIdUpdateTodo = ({ target }) => {
+    setIdUpdateTodo(target.value);
+  };
+
+  const onChangeIdDeleteTodo = ({ target }) => {
+    setIdDeleteTodo(target.value);
+  };
+
+  const onChangeFindTodo = ({ target }) => {
+    setFindTodo(target.value);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className={styles.app}>
+      <div className={styles.tools}>
+        <form onSubmit={onSubmitAddTodo}>
+          <input
+            className={styles.input}
+            type="text"
+            name="newTodo"
+            value={newTodo}
+            onChange={onChangeNewTodo}
+          ></input>
+          <button className={styles.button} disabled={isCreating} type="submit">
+            Добавить задачу
+          </button>
+        </form>
+        <form onSubmit={onSubmitUpdateTodo}>
+          <input
+            className={styles.input}
+            type="text"
+            name="idUpdateTodo"
+            value={idUpdateTodo}
+            onChange={onChangeIdUpdateTodo}
+          ></input>
+          <button className={styles.button} disabled={isUpdating} type="submit">
+            Задача выполнена
+          </button>
+        </form>
+        <form onSubmit={onSubmitDeleteTodo}>
+          <input
+            className={styles.input}
+            type="text"
+            name="idDeleteTodo"
+            value={idDeleteTodo}
+            onChange={onChangeIdDeleteTodo}
+          ></input>
+          <button className={styles.button} disabled={isDeleting} type="submit">
+            Удалить задачу
+          </button>
+        </form>
+        <form onSubmit={onSubmitFindTodo}>
+          <input
+            className={styles.input}
+            type="text"
+            name="findTodo"
+            value={findTodo}
+            onChange={onChangeFindTodo}
+          ></input>
+          <input
+            className={styles.input}
+            type="text"
+            name="foundTodo"
+            value={"Id задачи:" + idFoundTodo}
+          ></input>
+          <button className={styles.button} disabled={isFind} type="submit">
+            Найти задачу
+          </button>
+        </form>
+        <button className={styles.button} onClick={onClickSortTodos}>
+          Сортировать
+        </button>
+      </div>
+
+      <div className={styles.todosContainer}>
+        {isLoading ? (
+          <div className={styles.loader}></div>
+        ) : (
+          todosSort.map(({ id, title, completed }) => (
+            <li className={styles.todos} key={id}>
+              {completed}
+              {title}. Id:
+              {id}
+            </li>
+          ))
+        )}
+      </div>
     </div>
   );
-}
+};
 
 export default App;
