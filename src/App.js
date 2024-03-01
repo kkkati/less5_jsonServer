@@ -1,119 +1,71 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { selectTodos, selectIsLoading } from "./selectors";
 import styles from "./app.module.css";
+import {
+  getTodos,
+  addNewTodo,
+  updateTodo,
+  deleteTodo,
+  findTodoAction,
+} from "./actions";
 
 const App = () => {
-  const [todos, setTodos] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const todos = useSelector(selectTodos);
+  const isLoading = useSelector(selectIsLoading);
+
+  const [isSort, setIsSort] = useState(false);
+  const [isNewTodo, setIsNewTodo] = useState(false);
   const [newTodo, setNewTodo] = useState("Новая задача");
   const [findTodo, setFindTodo] = useState("Введите фрагмент задачи");
-  const [idFoundTodo, setIdFoundTodo] = useState("");
-  const [isNewTodo, setIsNewTodo] = useState(false);
   const [idUpdateTodo, setIdUpdateTodo] = useState("Введите id задачи");
   const [idDeleteTodo, setIdDeleteTodo] = useState("Введите id задачи");
-  const [isCreating, setIsCreating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeliting] = useState(false);
-  const [isFind, setIsFind] = useState(false);
-  const [isSort, setIsSort] = useState(false);
+  const [idFoundTodo, setIdFoundTodo] = useState("");
+
   const todosSort = isSort
     ? todos.sort((a, b) => {
         return a.title > b.title ? 1 : -1;
       })
     : todos;
 
+  const dispatch = useDispatch();
+  console.log(todos);
+
+  //получаем задачи
   useEffect(() => {
-    setIsLoading(true);
+    dispatch(getTodos());
+  }, [isNewTodo, dispatch]);
 
-    fetch("http://localhost:3005/todos")
-      .then((loadedData) => loadedData.json())
-      .then((loadedTodos) => {
-        setTodos(loadedTodos);
-      })
-      .finally(() => setIsLoading(false));
-  }, [isNewTodo]);
-
+  //добавляем новую задачу
   const onSubmitAddTodo = (event) => {
     event.preventDefault();
-    setIsCreating(true);
-    fetch("http://localhost:3005/todos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json;charset=utf-8" },
-      body: JSON.stringify({
-        title: newTodo,
-      }),
-    })
-      .then((rawResponse) => rawResponse.json())
-      .then((response) => {
-        console.log("Добавлена задача:", response);
-      })
-      .finally(() => {
-        console.log("Добавлена задача:");
-        setNewTodo("Новая задача");
-        setIsNewTodo(!isNewTodo);
-        setIsCreating(false);
-      });
+    dispatch(addNewTodo(newTodo, isNewTodo, setNewTodo, setIsNewTodo));
   };
 
+  //обновляем задачу
   const onSubmitUpdateTodo = (event) => {
     event.preventDefault();
-    setIsUpdating(true);
-    fetch(`http://localhost:3005/todos/${idUpdateTodo}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json;charset=utf-8" },
-      body: JSON.stringify({
-        completed: "Выполнено: ",
-      }),
-    })
-      .then((rawResponse) => rawResponse.json())
-      .then((response) => {
-        console.log("Задача обновлена:", response);
-      })
-      .finally(() => {
-        setIsNewTodo(!isNewTodo);
-        setIdUpdateTodo("Введите id задачи");
-        setIsUpdating(false);
-      });
+    dispatch(
+      updateTodo(idUpdateTodo, isNewTodo, setIdUpdateTodo, setIsNewTodo)
+    );
   };
 
+  //удаляем задачу
   const onSubmitDeleteTodo = (event) => {
     event.preventDefault();
-    setIsDeliting(true);
-    fetch(`http://localhost:3005/todos/${idDeleteTodo}`, {
-      method: "DELETE",
-    })
-      .then((rawResponse) => rawResponse.json())
-      .then((response) => {
-        console.log("Задача удалена:", response);
-      })
-      .finally(() => {
-        setIsNewTodo(!isNewTodo);
-        setIdDeleteTodo("Введите id задачи");
-        setIsUpdating(false);
-      });
+    dispatch(
+      deleteTodo(idDeleteTodo, isNewTodo, setIdDeleteTodo, setIsNewTodo)
+    );
   };
 
+  //сортируем задачи
   const onClickSortTodos = () => {
-    setIsSort(!isSort);
-    console.log(isSort);
+    dispatch(setIsSort(!isSort));
   };
 
+  //поиск по фразе
   const onSubmitFindTodo = (event) => {
-    event.preventDefault();
-    setIsFind(true);
-    fetch("http://localhost:3005/todos")
-      .then((loadedData) => loadedData.json())
-      .then((loadedTodos) => {
-        todos.forEach((element) => {
-          if (element.title.toLowerCase().includes(findTodo)) {
-            setIdFoundTodo(element.id);
-            return element.id;
-          }
-        });
-      })
-      .finally(() => {
-        setIsFind(false);
-        setFindTodo("Введите фрагмент задачи");
-      });
+    dispatch(findTodoAction(findTodo, setFindTodo, setIdFoundTodo));
   };
 
   //обработчики
@@ -144,7 +96,7 @@ const App = () => {
             value={newTodo}
             onChange={onChangeNewTodo}
           ></input>
-          <button className={styles.button} disabled={isCreating} type="submit">
+          <button className={styles.button} type="submit">
             Добавить задачу
           </button>
         </form>
@@ -156,7 +108,7 @@ const App = () => {
             value={idUpdateTodo}
             onChange={onChangeIdUpdateTodo}
           ></input>
-          <button className={styles.button} disabled={isUpdating} type="submit">
+          <button className={styles.button} type="submit">
             Задача выполнена
           </button>
         </form>
@@ -168,7 +120,7 @@ const App = () => {
             value={idDeleteTodo}
             onChange={onChangeIdDeleteTodo}
           ></input>
-          <button className={styles.button} disabled={isDeleting} type="submit">
+          <button className={styles.button} type="submit">
             Удалить задачу
           </button>
         </form>
@@ -186,7 +138,7 @@ const App = () => {
             name="foundTodo"
             value={"Id задачи:" + idFoundTodo}
           ></input>
-          <button className={styles.button} disabled={isFind} type="submit">
+          <button className={styles.button} type="submit">
             Найти задачу
           </button>
         </form>
